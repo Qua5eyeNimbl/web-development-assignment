@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Research Project Alpha</title>
+    <style>
+        body { background: #0c0c0c; color: #fff; font-family: 'Segoe UI', sans-serif; text-align: center; margin: 0; padding: 20px; }
+        .nav { display: flex; gap: 10px; max-width: 600px; margin: 0 auto 20px; }
+        input { flex: 1; padding: 12px; border-radius: 5px; border: 1px solid #333; background: #1a1a1a; color: #fff; }
+        button { padding: 10px 20px; background: #3b82f6; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        #results { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .card { background: #1a1a1a; padding: 8px; border-radius: 8px; cursor: pointer; font-size: 12px; transition: 0.2s; }
+        .card:hover { background: #333; }
+        .card img { width: 100%; border-radius: 4px; }
+        #player-wrap { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; background: #000; border-radius: 8px; }
+        iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; }
+        .sources { margin-top: 10px; display: flex; justify-content: center; gap: 10px; }
+    </style>
+</head>
+<body>
+
+    <div class="nav">
+        <input type="text" id="movieQuery" placeholder="Search for a movie...">
+        <button onclick="search()">Search</button>
+    </div>
+
+    <div id="results"></div>
+
+    <div id="player-wrap">
+        <iframe id="mainPlayer" src="" allowfullscreen></iframe>
+    </div>
+
+    <div class="sources" id="sourceButtons" style="display:none;">
+        <span>Try alternative servers:</span>
+        <button onclick="changeSource('vidsrc.to')">Server 1</button>
+        <button onclick="changeSource('vidsrc.me')">Server 2</button>
+        <button onclick="changeSource('embed.su')">Server 3</button>
+    </div>
+
+    <script>
+        let currentId = "";
+
+        async function search() {
+            const query = document.getElementById('movieQuery').value;
+            // Using a CORS proxy to ensure the school filter doesn't kill the request
+            const proxy = "https://corsproxy.io/?"; 
+            const url = `https://v3-cinemeta.strem.io/catalog/movie/top/search=${encodeURIComponent(query)}.json`;
+            
+            try {
+                const res = await fetch(proxy + encodeURIComponent(url));
+                const data = await res.json();
+                
+                const resultsDiv = document.getElementById('results');
+                resultsDiv.innerHTML = data.metas.map(m => `
+                    <div class="card" onclick="loadMovie('${m.imdb_id}')">
+                        <img src="${m.poster}" alt="poster">
+                        <p>${m.name} (${m.year})</p>
+                    </div>
+                `).join('');
+            } catch (err) {
+                alert("Search failed. The school might have blocked the search proxy.");
+            }
+        }
+
+        function loadMovie(id) {
+            currentId = id;
+            document.getElementById('sourceButtons').style.display = 'flex';
+            changeSource('vidsrc.me'); // Starting with .me as it's often less blocked than .to
+        }
+
+        function changeSource(domain) {
+            const player = document.getElementById('mainPlayer');
+            // Domain rotation helps bypass "Media unavailable" errors
+            player.src = `https://${domain}/embed/movie/${currentId}`;
+        }
+    </script>
+</body>
+</html>
